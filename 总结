@@ -48,4 +48,23 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
   kubectl get deployment nginx -o yaml
   kubectl get deployment nginx -o yaml > first.yaml
   kubectl delete deployment nginx
+  kubectl create -f first.yaml
+  kubectl get deployment nginx -o yaml > second.yaml
+  kubectl expose deployment nginx --port=80
+  kubectl get svc nginx
+  kubectl describe pod nginx**************
   
+  调整rc的副本数
+  kubectl scale deployment nginx --replicas=3 
+  kubectl get deployment nginx 
+  kubectl get ep nginx
+  kubectl get pod -o wide
+  kubectl delete pod nginx-****
+  kubectl expose deployment nginx --type=LoadBalancer 
+  删除deployment
+  kubectl delete deployment nginx
+  kubectl delete ep nginx
+  kubectl delete svc nginx
+  
+  
+  cpu内存限制
