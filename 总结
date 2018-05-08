@@ -129,5 +129,126 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
      如果没有设置namespace的资源空间，设置resource的话，服务会部署失败。
      
      配置tls访问
+     查看证书和api地址
+     less ~/.kube/config
+     获取客户端client-cert-data key
+     export client=$(grep client-cert ~/.kube/config |cut -d" " -f 6)
+     export key=$(grep client-key-data ~/.kube/config |cut -d " " -f 6)
+     export auth=$(grep certificate-authority-data ~/.kube/config |cut -d " " -f 6)
+     echo $client | base64 -d - > ./client.pem
+     echo $key | base64 -d - > ./client-key.pem
+     echo $auth | base64 -d - > ./ca.pem
+     kubectl config view |grep server 
+     
+     通过获取到的证书和API地址，进行访问。
+     curl --cert ./client.pem --key ./client-key.pem --cacert ./ca.pem https://10.128.0.3:6443/api/v1/pods
+  
+     通过json文件创建一个新的pod
+     vim curlpod.json
+     {
+         "kind": "Pod",
+         "apiVersion": "v1",
+         "metadata": {
+             "name": "curlpod"，
+             "namespace": "default",
+             "labels": "examplepod"
+             }
+       },
+       "spec": {
+            "containers": [{
+                  "name": "nginx",
+                  "image": "nginx",
+                  "ports":[{"containerPort":80}]
+                 }]
+                  }
+                  }
+     curl --cert ./client.pem --key ./client-key.pem --cacert ./ca.pem https://10.128.0.3:6443/api/v1/namespaces/default/pods -XPOST -H’Content-Type: application/json’ \
+     -d@curlpod.json
+     
+     
+     
+      api 调用
+      
+      kubectl get endpoints
+      
+      cd /home/student/.kube/cache/discovery/
+      python -m json.tool v1/serverresources.json
+      
+      
+      
+      RESTful API Access
+      
+      kubectl config view
+      kubectl get secrets -all-namespaces
+      kubectl get secrets
+      kubectl describe secret default-token-jdpq7
+      kubectl describe secret default-token-jdqp7 |grep ^token |cut -f7 -d ’ ’
+      
+      
+      
+      
+      WORKING WITH CRON JOBS
+      vim cron-job.yaml
+      apiVersion: batch/v1beta1
+      kind: CronJob
+      metadata:
+        name: date
+      spec: 
+        schedule: "*/1 * * * *"
+        jobTemplate:
+           spec:
+              template:
+                spec:
+                   containers:
+                   - name: dateperminute
+                     image: busybox
+                     args:
+                     - /bin/sh
+                     - -c
+                     - date; sleep 30
+                   restartPolicy: OnFailure
+                   
+                   
+                   
+      Managing state with deployment
+  
+      kubectl get rs
+      vim rs.yaml
+      apiVersion: extensisons/v1beta1
+      kind: ReplicaSet
+      metadata:
+         name: rs-one
+      spec:
+         replicas: 2
+         template:
+           metadata:
+              labels:
+                 system: ReplicaOne
+           spec:
+              containers:
+              - name: nginx
+                image: nginx:1.7.9
+                ports:
+                - containerPort: 80
+  
+  kubectl create -f rs.yaml
+  kubectl describe rs/rs-one
+  kubectl get pods
+  
+  删除ReplicaSet,但是不删除pod
+  kubectl delete rs/rs-one --cascade=false
+  kubectl describe rs/rs-one
+  kubectl get pods
+  kubectl create -f rs.yaml
+  kubectl get rs
+  kubectl get pods
+  kubectl edit pod rs-one-3c6bp
+  修改label
+  kubectl get po -L system
   
   
+  
+  
+  WORKING WITH DAEMONSETS
+  
+     
