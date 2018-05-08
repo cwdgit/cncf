@@ -1,1 +1,51 @@
+1.install kubernetes
 
+下载安装包
+$ wget \ https://training.linuxfoundation.org/cm/LFS258/LFS258_V2018-01-16_SOLUTIONS.tar.bz2 \ --user=LFtraining --password=Penguin2014
+$ tar -xvf LFS258_V2018-01-16_SOLUTIONS.tar.bz2
+
+安装 kubernetes
+ssh -i LFS458.pem student@35.226.100.87
+apt-get update && apt-get upgrade -y
+apt-get install -y docker.io
+添加安装源
+root@lfs458-node-1a0a:~# vim /etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+添加gpg key 
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg  | apt-key add
+安装kubeadm
+apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
+下载网络插件文件：
+ flannel：wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+ calico: wget https://goo.gl/eWLkzb -O calico.yaml
+ 修改文件中的network
+ 
+ 初始化master 安装kubernetes
+ kubeadm init --pod-network-cidr 10.244.0.0/16
+ 
+ 安装flannel
+ cp /root/kube-flannel.yml .
+ kubectl apply -f kube-flannel.yml
+ 
+ 允许master可以允许其他的pod
+  kubectl taint nodes --all node-role.kubernetes.io/master-
+  kubectl describe node lfs458-node-1a0a | grep -i taint 
+  
+  扩展集群
+  生成token ca cert hash文件
+  openssl x509 -pubkey  -in /etc/kubernetes/pki/ca.crt | openssl rsa  -pubin -outform der 2>/dev/null | openssl dgst  -sha256 -hex | sed ’s/^.* //’
+  
+  kubeadm join --token 27eee4.6e66ff60318da929 10.128.0.3:6443 --discovery-token-ca-cert-hash sha256:6d541678b05652e1fa5d43908e75e67376e994c3483d6683f2a18673e5d2a1b
+  
+  kubectl get nodes
+  kubectl get namespace
+  
+  运行一个deployment 
+  kubectl run nginx --image nginx 
+  kubectl get deployment
+  kubectl describe deployment nginx
+  kubectl get events
+  kubectl get deployment nginx -o yaml
+  kubectl get deployment nginx -o yaml > first.yaml
+  kubectl delete deployment nginx
+  
