@@ -66,5 +66,8 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
   kubectl delete ep nginx
   kubectl delete svc nginx
   
-  
+  resource limits
   cpu内存限制
+  kubectl run hog --image vish/stress
+  kubectl get deployments 
+  
