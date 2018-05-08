@@ -70,4 +70,64 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
   cpu内存限制
   kubectl run hog --image vish/stress
   kubectl get deployments 
+  kubectl describe deployment hog
+  kubectl get deployment hog -o yaml
+  
+  kubectl get deployment hog -o yaml > hog.yaml
+  
+  
+  
+  hog.yaml
+  imagePullPolicy: Always
+    name: hog
+    resources:
+       limits:
+         memory: "4Gi"
+       requests:
+         memory: "2500Mi"
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    
+    namespace的资源限制
+    kubectl crate namespace low-usage-limit
+    
+    vim low-resource-range.yaml
+    apiVersion: v1
+    kind: LimitRange
+    metadata: 
+      name: low-resource-range
+    spec:
+      limits:
+      - default:
+           cpu: 1
+           memory: 500Mi
+        defaultRequest:
+           cpu: 0.5
+           memory: 100Mi
+        type: Container
+        
+ 绑定limitrange到namespace上
+ kubectl create -f low-resource-range.yaml --namespace=low-usage-limit
+ kubectl get LimitRange --all-namespaces
+ kubectl run limited-hog --image vish/stress -n low-usage-limit
+ kubectl get deployment -n low-usage-limit
+ kubectl -n low-usage-limit get pod limited-hog-2556092078-wnpnv -o yaml 
+    
+ spec:
+   containers:
+   - image: vish/stress
+     imagePullPolicy: Always
+     name: limited-hog
+     resources:
+       limits:
+          cpu: "1"
+          memory: 500Mi
+       requests:
+          cpu: "1"
+          memory: 500Mi
+     terminationMessagePath: /dev/termination-log
+     如果没有设置namespace的资源空间，设置resource的话，服务会部署失败。
+     
+     配置tls访问
+  
   
