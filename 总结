@@ -249,6 +249,55 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
   
   
   
-  WORKING WITH DAEMONSETS
+  WORKING WITH DAEMONSETS AND ROLLING UPDATES AND ROLLBACKS
   
+  查看updateStrategy 设置
+  kubectl get ds/ds-one o yaml | grep -A 1 Strategy
+  updateStrategy:
+    type: OnDelete/RollingUpdate
+    
+  更新镜像版本
+  kubectl set image ds ds-one nginx=nginx:1.8.1-alpine
+  查看运行的pod镜像版本是否更改
+  kubectl describe po/ds-one-b1dcv | grep Image
+  删除这个pod，查看其镜像版本，发现镜像版本更改了
+  
+  查看daemonset更新历史
+  kubectl rollout history ds/ds-one
+  kubectl rollout history ds/ds-one --revision=1
+  
+  撤销某次更新
+  kubectl rollout undo ds/ds-one --to-revison=1
+  
+  当type是delete时，只有删除旧的pod才会触发更新。
+  当type是rollingupdate时，修改后会立即更新。
+  
+  kubectl rollout history ds/ds-two --revision=2
+  
+  
+  
+  
+  SERVICE
+  部署一个服务
+  kubectl expose deployment/nginx-one -n accounting
+  配置nodeport
+  kubectl expose deployment nginx-one --type=NodePort --name=service-lab -n accounting
+  kubectl describe service -n accounting
+  
+  
+  
+  USE LABELS TO MANAGER RESOURCES
+  kubectl label node node1 system-
+  
+  Volumes and Data
+  
+  Create a ConfigMap
+  通过挂载文件实现
+  mkdir primary
+  echo c > primary/cyan
+  echo m > primary/magenta
+  echo y > primary/yellow
+  echo k > primary/black
+  echo "known as key" >> primary/black
+  echo blue > favorite
      
