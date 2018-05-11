@@ -301,3 +301,263 @@ apt-get install -y kubeadm=1.9.1-00 kubelet=1.9.1-00
   echo "known as key" >> primary/black
   echo blue > favorite
      
+  创建configmap从文件中获取变量
+  kubectl create configmap colors --from-literal=text=black --from-file=./favorite --from-file=./primary/ 
+  
+  kubectl get configmap colors
+  kubectl get configmap colors -o yaml
+  
+  创建pod挂载configmap中单个值
+  apiVersion: v1
+  kind: Pod
+  metadata:
+     name: shell-demo
+  spec: 
+      containers:
+      - name: nginx
+        image: nginx
+        env:
+        - name: ilike
+          valueFrom:
+             configMapKeyRef:
+                name: colors
+                key: favorite
+             
+ 
+ vim simpleshell.yaml
+ envFrom:
+ - configMapRef:
+      name: colors
+      
+      
+  通过yaml创建configmap
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+     name: fast-car
+     namespace: default
+  data:
+     car.make: Ford
+     car.model: Mustang
+     car.trim: Shelby
+     
+ 把configmap当做一个volume进行挂载
+ vim simpleshell.yaml
+ spec:
+    containers:
+       - name: nginx
+         image: nginx
+         volumeMounts:
+         - name: car-vol
+           mountPath: /etc/cars
+    volumes:
+      - name: car-vol
+        configMap:
+           name: fast-car
+ 
+ 创建PV
+ vim PVol.yaml
+ apiVersion: v1
+ kind: PersistentVolume
+ metadata:
+    name: pvvol-1
+ spec:
+    capacity:
+    storage: 1Gi
+ accessModes:
+   - ReadWriteMany
+ persistentVollumeReclaimPolicy: Retain
+ nfs:
+   path: /opt/sfw
+   server: node1
+   readOnly: false
+   
+   kubectl get pv
+   
+   创建pvc
+   vim pvc.yaml
+   apiVersion: v1
+   kind: PersistentVolumeClaim
+   metadata:
+      name: pvc-one
+   spec:
+      accessModes:
+      - ReadWriteMany
+      resources:
+        requests:
+          storage: 200Mi
+   
+   kubectl get pvc
+   创建deployment使用pvc
+   apiVersion: apps/v1beta1
+   kind: Deployment
+   metadata:
+      annotations:
+        deployment.kubernetes.io/revision: "1"
+      generation: 1
+      labels:
+        run: nginx
+      name: nginx-nfs
+      namespace: default
+      resourceVersion: "1411"
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+           run: nginx
+       strategy:
+         rollingUpdate:
+            maxSurge: 1
+            maxUnavailable: 1
+         type: RollingUpdate
+       template:
+         metadata:
+            creationTimestamp: null
+            labels:
+              run: nginx
+         spec:
+           containers:
+           - image: nginx
+             imagePullPolicy: Always
+             name: nginx
+             volumeMounts:
+             - name: nfs-vol
+               mountPath: /opt
+             ports：
+             - containerPort: 80
+               protocol: TCP
+             resources: {}
+             terminationMessagePath: /dev/termination-log
+             terminationMessagePolicy: File
+           volumes:
+           - name: nfs-vol
+             persistentVolumeClaim:
+                claimName: pvc-one
+           dnsPolicy: ClusterFirst
+           restartPolicy: Always
+           schedulerName: default-scheduler
+           securityContext: {}
+           terminationGracePeriodSeconeds: 30
+    
+    用resourcequota限制pvc使用
+    vim storage-quota.yaml
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: storagequota
+    spec:
+      hard:
+        persistentvolumeclaims: "10"
+        requests.storage: "500Mi"
+   
+将resource-quota绑定到namespace  
+kubectl create -f storage-quota.yaml -n small
+
+
+delete 
+retain
+recycle
+
+SCHEDULING
+assign pods using labels
+
+kubectl describe nodes | grep -i label
+kubectl describe nodes | grep -i taint
+
+kubectl label nodes master2 status=vip
+kubectl label nodes master3 status=other
+kubectl get nodes --show-labels
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vip
+spec:
+  containers:
+  - name: vip
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  - name: vip2
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  - name: vip3
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  nodeSelector:
+    status: vip
+ 
+ 使用taints去控制pod部署
+
+ apiVersion: apps/v1beta1
+ kind: Deployment
+ metadata:
+   name: taint-deployment
+ spec:
+   replicas: 8
+   template: 
+     metadata:
+       labels:
+         app: nginx
+     spec:
+       containers:
+       - name: nginx
+         image: nginx:1.7.9
+         ports:
+         - containerPort: 80
+           
+设置master节点不可调度（taint）
+kubectl taint nodes tvm-04 node-role.kubernetes.io/master=:NoSchedule
+   
+查看node的role
+kubectl describe nodes master1 |grep -E '(Roles|Taints)'
+   
+设置master可以部署相关服务
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: whoami-t2
+  labels:
+    app: whoami
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+        - name: whoami
+          image: opera443399/whoami:0.9
+          ports:
+            - containerPort: 80
+      tolerations:
+      - key: "node-role.kubernetes.io/master"
+        operator: "Equal"
+        value: ""
+        effect: "NoSchedule"
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
