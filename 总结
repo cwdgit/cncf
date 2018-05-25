@@ -546,6 +546,39 @@ spec:
         effect: "NoSchedule"
   
   
+ Review log file locations
+ review log file locations
+ 查看kubelet日志
+ journalctl -u kubelet 
+ 
+ /var/log/kube-apiserver.log
+ /var/log/kube-scheduler.log
+ /var/log/kube-controller-manager.log
+ 
+ viewing logs output
+ kubectl get pod --all-namespaces
+ kubectl logs kube-scheduler-lfs458-node -n kube-system | grep nginx
+ 
+ create a custom resource definition
+ crd.yaml
+
+ apiVersion: apiextensions.k8s.io/v1beta1
+ kind: CustomResourceDefinition
+ metadata:
+    name: crontabs.training.lfs458.com
+ spec:
+    scope: Cluster
+    group: training.lfs458.com
+    version: v1
+    names: 
+       kind: CronTab
+       plural: crontabs
+       
+  
+  
+  
+  
+  
   
   
   
